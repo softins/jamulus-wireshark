@@ -421,7 +421,7 @@ local skills = {
 	Not_Set		= 0,
 	Beginner	= 1,
 	Intermediate	= 2,
-	Professional	= 3,
+	Expert		= 3,
 }
 local skills_valstr = makeValString(skills)
 
