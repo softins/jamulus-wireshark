@@ -434,6 +434,16 @@ local codecs = {
 }
 local codecs_valstr = makeValString(codecs)
 
+local opsys = {
+	Windows	= 0,
+	MacOS	= 1,
+	Linux	= 2,
+	Android	= 3,
+	iOS	= 4,
+	Unix	= 5,
+}
+local opsys_valstr = makeValString(opsys)
+
 local status = {
 	SUCCESS = 0,	-- Successfully registered
 	FAILED = 1,	-- Failed to register (server list full)
@@ -476,7 +486,7 @@ local fields =
 	nclients = ProtoField.uint8("jamulus.nclients", "Num Clients", base.DEC),
 	maxclients = ProtoField.uint8("jamulus.maxclients", "Max Clients", base.DEC),
 	permanent = ProtoField.uint8("jamulus.permanent", "Permanent", base.DEC),
-	os = ProtoField.uint8("jamulus.os", "Operating System", base.DEC),
+	os = ProtoField.uint8("jamulus.os", "Operating System", base.DEC, opsys_valstr),
 	osver = ProtoField.string("jamulus.osver", "OS Version", base.UNICODE),
 	status = ProtoField.uint8("jamulus.status", "Status", base.DEC, status_valstr),
 }
@@ -709,7 +719,7 @@ function disect_msg(pinfo, opcode, buf, subtree)
 		-- no data
 	elseif opcode == opcodes.CLM_VERSION_AND_OS then
 		msgdata:add_le(fields.os, buf(0,1))
-		pinfo.cols.info:append(" (" .. buf(0,1):le_uint())
+		pinfo.cols.info:append(" (" .. opsys_valstr[buf(0,1):le_uint()])
 		local i = 1
 		n = buf(i,2):le_uint(); i=i+2
 		if n > 0 then
