@@ -99,6 +99,7 @@ opcodes = {
 	OPUS_SUPPORTED			= 26,	-- tells that OPUS codec is supported
 	LICENCE_REQUIRED		= 27,	-- licence required
 	REQ_CHANNEL_LEVEL_LIST		= 28,	-- request the channel level list
+	VERSION_AND_OS			= 29,	-- version number and operating system
 	CLM_PING_MS			= 1001,	-- for measuring ping time
 	CLM_PING_MS_WITHNUMCLIENTS	= 1002,	-- for ping time and num. of clients info
 	CLM_SERVER_FULL			= 1003,	-- server full message
@@ -644,6 +645,17 @@ function disect_msg(pinfo, opcode, buf, subtree)
 	elseif opcode == opcodes.REQ_CHANNEL_LEVEL_LIST then
 		msgdata:add_le(fields.chanlvlopt, buf)
 		pinfo.cols.info:append(" (" .. buf:le_uint() .. ")")
+	elseif opcode == opcodes.VERSION_AND_OS then
+		msgdata:add_le(fields.os, buf(0,1))
+		pinfo.cols.info:append(" (" .. opsys_valstr[buf(0,1):le_uint()])
+		local i = 1
+		n = buf(i,2):le_uint(); i=i+2
+		if n > 0 then
+			msgdata:add(fields.osver, buf(i, n))
+			pinfo.cols.info:append(", " .. buf(i, n):string())
+			i=i+n
+		end
+		pinfo.cols.info:append(")")
 	elseif opcode == opcodes.CLM_PING_MS then
 		msgdata:add_le(fields.txtime, buf(0,4))
 		pinfo.cols.info:append(" (" .. buf(0,4):le_uint() .. ")")
