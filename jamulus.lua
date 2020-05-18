@@ -12,7 +12,6 @@
 
     This code is a plugin for Wireshark, to dissect Jamulus protocol messages
     over UDP.
-    protocol messages over TCP.
 
 ]]----------------------------------------
 
@@ -422,7 +421,7 @@ local skills = {
 	Not_Set		= 0,
 	Beginner	= 1,
 	Intermediate	= 2,
-	Professional	= 3,
+	Expert		= 3,
 }
 local skills_valstr = makeValString(skills)
 
@@ -768,7 +767,7 @@ end
 
 --------------------------------------------------------------------------------
 -- We want to have our protocol dissection invoked for a specific UDP port,
--- so get the TCP dissector table and add our protocol to it.
+-- so get the UDP dissector table and add our protocol to it.
 local function enableDissector()
     -- using DissectorTable:set() removes existing dissector(s), whereas the
     -- DissectorTable:add() one adds ours before any existing ones, but
