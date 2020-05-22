@@ -415,6 +415,16 @@ local instruments = {
 	Guitar_Vocal	= 26,
 	Keyboard_Vocal	= 27,
 	Bodhran		= 28,
+	Bassoon		= 29,
+	Oboe		= 30,
+	Harp		= 31,
+	Viola		= 32,
+	Congas		= 33,
+	Bongo		= 34,
+	Vocal_Bass	= 35,
+	Vocal_Tenor	= 36,
+	Vocal_Alto	= 37,
+	Vocal_Soprano	= 38,
 }
 local instruments_valstr = makeValString(instruments)
 
