@@ -478,6 +478,8 @@ local fields =
 	bns = ProtoField.uint32("jamulus.bns", "Base Netw Size", base.DEC),
 	bsf = ProtoField.uint16("jamulus.bsf", "Block Size Factor", base.DEC),
 	nchan = ProtoField.uint8("jamulus.nchan", "Num Chans", base.DEC),
+	level = ProtoField.uint8("jamulus.level", "Level", base.DEC),
+	levels = ProtoField.bytes("jamulus.levels", "Levels", base.SPACE),
 	samrate = ProtoField.uint32("jamulus.samrate", "Sample Rate", base.DEC),
 	codec = ProtoField.uint16("jamulus.codec", "Codec", base.DEC, codecs_valstr),
 	cver = ProtoField.uint16("jamulus.cver", "Codec Version", base.DEC),
@@ -777,7 +779,26 @@ function disect_msg(pinfo, opcode, buf, subtree)
 	elseif opcode == opcodes.CLM_REQ_CONN_CLIENTS_LIST then
 		-- no data
 	elseif opcode == opcodes.CLM_CHANNEL_LEVEL_LIST then
-		msgdata:add(fields.data, buf)
+		local levels = msgdata:add(fields.levels, buf)
+		local i = 0
+		local desc = ""
+		while i < buf:len() do
+			local l1 = buf(i,1):le_uint()
+			local l2 = bit.rshift(l1, 4)
+			l1 = bit.band(l1, 15);
+			if desc == "" then
+				desc = " ("
+			else
+				desc = desc .. ","
+			end
+			if l1 == 15 then l1 = "-" end
+			if l2 == 15 then l2 = "-" end
+			desc = desc .. l1 .. "," .. l2
+			-- levels:add(fields.level, buf(i,1), l1);
+			-- levels:add(fields.level, buf(i,1), l2);
+			i = i + 1
+		end
+		if desc ~= "" then levels:append_text(desc .. ")") end
 	elseif opcode == opcodes.CLM_REGISTER_SERVER_RESP then
 		msgdata:add_le(fields.status, buf)	-- 0 = success, 1 = server full
 		pinfo.cols.info:append(" (" .. status_valstr[buf:le_uint()] .. ")")
