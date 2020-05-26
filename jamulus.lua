@@ -478,7 +478,7 @@ local fields =
 	bns = ProtoField.uint32("jamulus.bns", "Base Netw Size", base.DEC),
 	bsf = ProtoField.uint16("jamulus.bsf", "Block Size Factor", base.DEC),
 	nchan = ProtoField.uint8("jamulus.nchan", "Num Chans", base.DEC),
-	level = ProtoField.uint8("jamulus.level", "Level", base.DEC),
+	-- level = ProtoField.uint8("jamulus.level", "Level", base.DEC),
 	levels = ProtoField.bytes("jamulus.levels", "Levels", base.SPACE),
 	samrate = ProtoField.uint32("jamulus.samrate", "Sample Rate", base.DEC),
 	codec = ProtoField.uint16("jamulus.codec", "Codec", base.DEC, codecs_valstr),
@@ -545,6 +545,10 @@ function jamulus.dissector(buffer, pinfo, tree)
 	end
 end
 
+local function gainValue(gain)
+	return math.floor(gain*100/32768+0.5) .. "%"
+end
+
 function disect_msg(pinfo, opcode, buf, subtree)
 	local s = "s"
 	if buf:len() == 1 then s = "" end
@@ -565,9 +569,10 @@ function disect_msg(pinfo, opcode, buf, subtree)
 	elseif opcode == opcodes.NET_BLSI_FACTOR then
 		-- Obsolete
 	elseif opcode == opcodes.CHANNEL_GAIN then
+		local gain = gainValue(buf(1,2):le_uint())
 		msgdata:add_le(fields.chanid, buf(0,1))
-		msgdata:add_le(fields.gain, buf(1,2))
-		pinfo.cols.info:append(" ([" .. buf(0,1):le_uint() .. "] => " .. buf(1,2):le_uint() .. ")")
+		msgdata:add_le(fields.gain, buf(1,2)):append_text(" (" .. gain .. ")")
+		pinfo.cols.info:append(" ([" .. buf(0,1):le_uint() .. "] => " .. gain .. ")")
 	elseif opcode == opcodes.CONN_CLIENTS_LIST_NAME then
 		-- Obsolete
 	elseif opcode == opcodes.SERVER_FULL then
