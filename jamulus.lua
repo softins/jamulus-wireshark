@@ -100,6 +100,9 @@ opcodes = {
 	LICENCE_REQUIRED		= 27,	-- licence required
 	REQ_CHANNEL_LEVEL_LIST		= 28,	-- request the channel level list
 	VERSION_AND_OS			= 29,	-- version number and operating system
+	CHANNEL_PAN			= 30,	-- set channel pan for mix
+	MUTE_STATE_CHANGED		= 31,	-- mute state of your signal at another client has changed
+	CLIENT_ID			= 32,	-- current user ID and server status
 	CLM_PING_MS			= 1001,	-- for measuring ping time
 	CLM_PING_MS_WITHNUMCLIENTS	= 1002,	-- for ping time and num. of clients info
 	CLM_SERVER_FULL			= 1003,	-- server full message
@@ -460,6 +463,12 @@ local status = {
 }
 local status_valstr = makeValString(status)
 
+local muting = {
+	Live = 0,	-- Not muted
+	Muted = 1,	-- Muted
+}
+local muting_valstr = makeValString(muting)
+
 ----------------------------------------
 -- a table of all of our Protocol's fields
 local fields =
@@ -473,6 +482,8 @@ local fields =
 	instrument = ProtoField.uint32("jamulus.instrument", "Instrument", base.DEC, instruments_valstr),
 	skill = ProtoField.uint8("jamulus.skill", "Skill", base.DEC, skills_valstr),
 	gain = ProtoField.uint16("jamulus.gain", "Gain", base.DEC),
+	pan = ProtoField.uint16("jamulus.pan", "Pan", base.DEC),
+	mute = ProtoField.uint8("jamulus.mute", "Mute", base.DEC, muting_valstr),
 	jbsize = ProtoField.uint16("jamulus.jbsize", "JBsize", base.DEC),
 	len = ProtoField.uint16("jamulus.len", "Len", base.DEC),
 	bns = ProtoField.uint32("jamulus.bns", "Base Netw Size", base.DEC),
@@ -543,6 +554,12 @@ function jamulus.dissector(buffer, pinfo, tree)
 		local subtree = tree:add(jamulus, buffer(), "Jamulus Audio Data", "(" .. length .. " byte" .. s .. ")")
 		pinfo.cols.info = "Audio Data"
 	end
+end
+
+local function panValue(pan)
+	if pan < 16384 then return math.floor((16384-pan)*100/16384+0.5) .. "% left" end
+	if pan > 16384 then return math.floor((pan-16384)*100/16384+0.5) .. "% right" end
+	return "Centre"
 end
 
 local function gainValue(gain)
@@ -673,6 +690,18 @@ function disect_msg(pinfo, opcode, buf, subtree)
 			i=i+n
 		end
 		pinfo.cols.info:append(")")
+	elseif opcode == opcodes.CHANNEL_PAN then
+		local pan = panValue(buf(1,2):le_uint())
+		msgdata:add_le(fields.chanid, buf(0,1))
+		msgdata:add_le(fields.pan, buf(1,2)):append_text(" (" .. pan .. ")")
+		pinfo.cols.info:append(" ([" .. buf(0,1):le_uint() .. "] => " .. pan .. ")")
+	elseif opcode == opcodes.MUTE_STATE_CHANGED then
+		msgdata:add_le(fields.chanid, buf(0,1))
+		msgdata:add_le(fields.mute, buf(1,1))
+		pinfo.cols.info:append(" ([" .. buf(0,1):le_uint() .. "] => " .. muting_valstr[buf(1,1):le_uint()] .. ")")
+	elseif opcode == opcodes.CLIENT_ID then
+		msgdata:add_le(fields.chanid, buf(0,1))
+		pinfo.cols.info:append(" (" .. buf(0,1):le_uint() .. ")")
 	elseif opcode == opcodes.CLM_PING_MS then
 		msgdata:add_le(fields.txtime, buf(0,4))
 		pinfo.cols.info:append(" (" .. buf(0,4):le_uint() .. ")")
