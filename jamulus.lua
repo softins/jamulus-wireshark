@@ -103,6 +103,7 @@ opcodes = {
 	CHANNEL_PAN			= 30,	-- set channel pan for mix
 	MUTE_STATE_CHANGED		= 31,	-- mute state of your signal at another client has changed
 	CLIENT_ID			= 32,	-- current user ID and server status
+	RECORDER_STATE			= 33,	-- state of the jam recorder on the server
 	CLM_PING_MS			= 1001,	-- for measuring ping time
 	CLM_PING_MS_WITHNUMCLIENTS	= 1002,	-- for ping time and num. of clients info
 	CLM_SERVER_FULL			= 1003,	-- server full message
@@ -478,6 +479,7 @@ local fields =
 	ackid = ProtoField.uint16("jamulus.ackid", "AckID", base.DEC, opcodes_valstr),
 	cnt = ProtoField.uint8("jamulus.cnt", "Cnt", base.DEC),
 	chanid = ProtoField.uint8("jamulus.chanid", "Channel", base.DEC),
+	recstate = ProtoField.uint8("jamulus.recstate", "Recording State", base.DEC),
 	country = ProtoField.uint16("jamulus.country", "Country", base.DEC, countries_valstr),
 	instrument = ProtoField.uint32("jamulus.instrument", "Instrument", base.DEC, instruments_valstr),
 	skill = ProtoField.uint8("jamulus.skill", "Skill", base.DEC, skills_valstr),
@@ -701,6 +703,9 @@ function disect_msg(pinfo, opcode, buf, subtree)
 		pinfo.cols.info:append(" ([" .. buf(0,1):le_uint() .. "] => " .. muting_valstr[buf(1,1):le_uint()] .. ")")
 	elseif opcode == opcodes.CLIENT_ID then
 		msgdata:add_le(fields.chanid, buf(0,1))
+		pinfo.cols.info:append(" (" .. buf(0,1):le_uint() .. ")")
+	elseif opcode == opcodes.RECORDER_STATE then
+		msgdata:add_le(fields.recstate, buf(0,1))
 		pinfo.cols.info:append(" (" .. buf(0,1):le_uint() .. ")")
 	elseif opcode == opcodes.CLM_PING_MS then
 		msgdata:add_le(fields.txtime, buf(0,4))
