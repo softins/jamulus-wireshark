@@ -120,6 +120,7 @@ opcodes = {
 	CLM_REQ_CONN_CLIENTS_LIST	= 1014,	-- request the connected clients list
 	CLM_CHANNEL_LEVEL_LIST		= 1015,	-- channel level list
 	CLM_REGISTER_SERVER_RESP	= 1016,	-- status of server registration request
+	CLM_REGISTER_SERVER_EX		= 1017,	-- register server with extended information
 }
 local opcodes_valstr = makeValString(opcodes)
 
@@ -459,8 +460,10 @@ local opsys = {
 local opsys_valstr = makeValString(opsys)
 
 local status = {
-	SUCCESS = 0,	-- Successfully registered
-	FAILED = 1,	-- Failed to register (server list full)
+	SUCCESS = 0,		-- Successfully registered
+	SERVER_FULL = 1,	-- Failed to register (server list full)
+	TOO_OLD = 2,		-- Failed to register (server version too old)
+	NOT_FULFIL = 3,		-- Failed to register (registration requirements not fulfilled)
 }
 local status_valstr = makeValString(status)
 
@@ -839,8 +842,44 @@ function disect_msg(pinfo, opcode, buf, subtree)
 		end
 		if desc ~= "" then levels:append_text(desc .. ")") end
 	elseif opcode == opcodes.CLM_REGISTER_SERVER_RESP then
-		msgdata:add_le(fields.status, buf)	-- 0 = success, 1 = server full
+		msgdata:add_le(fields.status, buf)	-- 0 = success, 1+ = failed
 		pinfo.cols.info:append(" (" .. status_valstr[buf:le_uint()] .. ")")
+	elseif opcode == opcodes.CLM_REGISTER_SERVER_EX then
+		msgdata:add_le(fields.port, buf(0,2))
+		msgdata:add_le(fields.country, buf(2,2))
+		msgdata:add_le(fields.maxclients, buf(4,1))
+		msgdata:add_le(fields.permanent, buf(5,1))
+		pinfo.cols.info:append(" (port=" .. buf(0,2):le_uint() .. ", " .. countries_valstr[buf(2,2):le_uint()] .. ", maxclients=" .. buf(4,1):le_uint() .. ", perm=" .. buf(5,1):le_uint())
+		local i = 6
+		n = buf(i,2):le_uint(); i=i+2
+		if n > 0 then
+			msgdata:add(fields.name, buf(i, n))
+			pinfo.cols.info:append(", name=\"" .. buf(i,n):string() .. "\"")
+			i=i+n
+		end
+		n = buf(i,2):le_uint(); i=i+2
+		if n > 0 then
+			msgdata:add(fields.ipaddrs, buf(i, n))
+			pinfo.cols.info:append(", ipaddrs=\"" .. buf(i,n):string() .. "\"")
+			i=i+n
+		end
+		n = buf(i,2):le_uint(); i=i+2
+		if n > 0 then
+			msgdata:add(fields.city, buf(i, n))
+			pinfo.cols.info:append(", city=\"" .. buf(i,n):string() .. "\"")
+			i=i+n
+		end
+
+		msgdata:add_le(fields.os, buf(i,1))
+		pinfo.cols.info:append(", os=" .. opsys_valstr[buf(i,1):le_uint()])
+		i=i+1
+		n = buf(i,2):le_uint(); i=i+2
+		if n > 0 then
+			msgdata:add(fields.osver, buf(i, n))
+			pinfo.cols.info:append(", version=" .. buf(i, n):string())
+			i=i+n
+		end
+		pinfo.cols.info:append(")")
 	else
 		-- msgdata:add(fields.data, buf)
 	end
