@@ -104,6 +104,9 @@ opcodes = {
 	MUTE_STATE_CHANGED		= 31,	-- mute state of your signal at another client has changed
 	CLIENT_ID			= 32,	-- current user ID and server status
 	RECORDER_STATE			= 33,	-- state of the jam recorder on the server
+	REQ_SPLIT_MESS_SUPPORT		= 34,	-- request support for split messages
+	SPLIT_MESS_SUPPORTED		= 35,	-- split messages are supported
+
 	CLM_PING_MS			= 1001,	-- for measuring ping time
 	CLM_PING_MS_WITHNUMCLIENTS	= 1002,	-- for ping time and num. of clients info
 	CLM_SERVER_FULL			= 1003,	-- server full message
@@ -121,6 +124,8 @@ opcodes = {
 	CLM_CHANNEL_LEVEL_LIST		= 1015,	-- channel level list
 	CLM_REGISTER_SERVER_RESP	= 1016,	-- status of server registration request
 	CLM_REGISTER_SERVER_EX		= 1017,	-- register server with extended information
+
+	SPECIAL_SPLIT_MESSAGE		= 2001,	-- a container for split messages
 }
 local opcodes_valstr = makeValString(opcodes)
 
@@ -710,6 +715,10 @@ function disect_msg(pinfo, opcode, buf, subtree)
 	elseif opcode == opcodes.RECORDER_STATE then
 		msgdata:add_le(fields.recstate, buf(0,1))
 		pinfo.cols.info:append(" (" .. buf(0,1):le_uint() .. ")")
+	elseif opcode == opcodes.REQ_SPLIT_MESS_SUPPORT then
+		-- no data
+	elseif opcode == opcodes.SPLIT_MESS_SUPPORTED then
+		-- no data
 	elseif opcode == opcodes.CLM_PING_MS then
 		msgdata:add_le(fields.txtime, buf(0,4))
 		pinfo.cols.info:append(" (" .. buf(0,4):le_uint() .. ")")
@@ -880,6 +889,8 @@ function disect_msg(pinfo, opcode, buf, subtree)
 			i=i+n
 		end
 		pinfo.cols.info:append(")")
+	elseif opcode == opcodes.SPECIAL_SPLIT_MESSAGE then
+		msgdata:add(fields.data, buf)
 	else
 		-- msgdata:add(fields.data, buf)
 	end
