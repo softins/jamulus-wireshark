@@ -484,8 +484,11 @@ local fields =
 {
 	tag = ProtoField.uint16("jamulus.tag", "Tag", base.DEC),
 	id = ProtoField.uint16("jamulus.id", "ID", base.DEC, opcodes_valstr),
+	splitid = ProtoField.uint16("jamulus.splitid", "ID", base.DEC, opcodes_valstr),
 	ackid = ProtoField.uint16("jamulus.ackid", "AckID", base.DEC, opcodes_valstr),
 	cnt = ProtoField.uint8("jamulus.cnt", "Cnt", base.DEC),
+	nparts = ProtoField.uint8("jamulus.nparts", "NParts", base.DEC),
+	splitcnt = ProtoField.uint8("jamulus.splitcnt", "SplitCnt", base.DEC),
 	chanid = ProtoField.uint8("jamulus.chanid", "Channel", base.DEC),
 	recstate = ProtoField.uint8("jamulus.recstate", "Recording State", base.DEC),
 	country = ProtoField.uint16("jamulus.country", "Country", base.DEC, countries_valstr),
@@ -890,7 +893,16 @@ function disect_msg(pinfo, opcode, buf, subtree)
 		end
 		pinfo.cols.info:append(")")
 	elseif opcode == opcodes.SPECIAL_SPLIT_MESSAGE then
-		msgdata:add(fields.data, buf)
+		local splitopcode = buf(0,2):le_uint()
+		msgdata:add_le(fields.splitid, buf(0,2))
+		msgdata:add_le(fields.nparts, buf(2,1))
+		msgdata:add_le(fields.splitcnt, buf(3,1))
+		local i = 4
+		n = buf:len() - i
+		pinfo.cols.info:append(" (" .. opcodes_valstr[splitopcode] .. ", nparts=" .. buf(2,1):le_uint() .. ", splitcnt=" .. buf(3,1):le_uint() .. ", datalen=" .. n .. ")")
+		if n > 0 then
+			msgdata:add(fields.data, buf(i,n))
+		end
 	else
 		-- msgdata:add(fields.data, buf)
 	end
