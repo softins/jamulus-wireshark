@@ -945,7 +945,7 @@ local debug_pref_enum = {
 ----------------------------------------
 -- register our preferences
 jamulus.prefs.enabled     = Pref.bool("Dissector enabled", default_settings.enabled,
-                                        "Whether the FPM dissector is enabled or not")
+                                        "Whether the Jamulus dissector is enabled or not")
 
 jamulus.prefs.debug       = Pref.enum("Debug", default_settings.debug_level,
                                         "The debug printing level", debug_pref_enum)
