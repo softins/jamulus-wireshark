@@ -124,6 +124,7 @@ opcodes = {
 	CLM_CHANNEL_LEVEL_LIST		= 1015,	-- channel level list
 	CLM_REGISTER_SERVER_RESP	= 1016,	-- status of server registration request
 	CLM_REGISTER_SERVER_EX		= 1017,	-- register server with extended information
+	CLM_RED_SERVER_LIST		= 1018,	-- reduced server list
 
 	SPECIAL_SPLIT_MESSAGE		= 2001,	-- a container for split messages
 }
@@ -779,6 +780,22 @@ function disect_msg(pinfo, opcode, buf, subtree)
 			if n > 0 then server:add(fields.ipaddrs, buf(i, n)); i=i+n end
 			n = buf(i,2):le_uint(); i=i+2
 			if n > 0 then server:add(fields.city, buf(i, n)); i=i+n end
+			c = c+1
+		end
+		local s = "s"
+		if c == 1 then s = "" end
+		pinfo.cols.info:append(" (" .. c .. " server" .. s .. ")")
+	elseif opcode == opcodes.CLM_RED_SERVER_LIST then
+		local c = 0
+		local i = 0
+		while i < buf:len() do
+			local n1 = buf(i+6,1):le_uint()
+			local serverlen = 7+n1
+			local server = msgdata:add(jamulus, buf(i,serverlen), "Server " .. c)
+			server:add_le(fields.ipaddr, buf(i,4)); i=i+4
+			server:add_le(fields.port, buf(i,2)); i=i+2
+			n = buf(i,1):le_uint(); i=i+1
+			if n > 0 then server:add(fields.name, buf(i, n)); i=i+n end
 			c = c+1
 		end
 		local s = "s"
