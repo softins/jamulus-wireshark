@@ -542,6 +542,9 @@ function jamulus.dissector(buffer, pinfo, tree)
 
 	pinfo.cols.protocol = jamulus.name
 
+	local chans = ""	-- in case of audio packet
+	if buffer(0,1):le_uint() == 0 then chans = " Mono" elseif buffer(0,1):le_uint() == 4 then chans = " Stereo" end
+
 	if buffer(0,2):le_uint() == 0 and length >= 7 then
 		datalen = buffer(5,2):le_uint()
 
@@ -561,12 +564,12 @@ function jamulus.dissector(buffer, pinfo, tree)
 			disect_msg(pinfo, opcode, buffer(7,datalen), subtree)
 			subtree:add_le(fields.crc, buffer(7+datalen, 2))
 		else
-			local subtree = tree:add(jamulus, buffer(), "Jamulus Audio Data", "(" .. length .. " byte" .. s .. ")")
-			pinfo.cols.info = "Audio Data"
+			local subtree = tree:add(jamulus, buffer(), "Jamulus Audio Data" .. chans, "(" .. length .. " byte" .. s .. ")")
+			pinfo.cols.info = "Audio Data" .. chans
 		end
 	else
-		local subtree = tree:add(jamulus, buffer(), "Jamulus Audio Data", "(" .. length .. " byte" .. s .. ")")
-		pinfo.cols.info = "Audio Data"
+		local subtree = tree:add(jamulus, buffer(), "Jamulus Audio Data" .. chans, "(" .. length .. " byte" .. s .. ")")
+		pinfo.cols.info = "Audio Data" .. chans
 	end
 end
 
