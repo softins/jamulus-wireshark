@@ -480,6 +480,45 @@ local muting = {
 local muting_valstr = makeValString(muting)
 
 ----------------------------------------
+-- #define OPUS_NUM_BYTES_MONO_LOW_QUALITY                     12
+-- #define OPUS_NUM_BYTES_MONO_NORMAL_QUALITY                  22
+-- #define OPUS_NUM_BYTES_MONO_HIGH_QUALITY                    36
+-- #define OPUS_NUM_BYTES_MONO_LOW_QUALITY_DBLE_FRAMESIZE      25
+-- #define OPUS_NUM_BYTES_MONO_NORMAL_QUALITY_DBLE_FRAMESIZE   45
+-- #define OPUS_NUM_BYTES_MONO_HIGH_QUALITY_DBLE_FRAMESIZE     71
+-- #define OPUS_NUM_BYTES_MONO_HIGHER_QUALITY_DBLE_FRAMESIZE   82
+
+-- #define OPUS_NUM_BYTES_STEREO_LOW_QUALITY                   24
+-- #define OPUS_NUM_BYTES_STEREO_NORMAL_QUALITY                35
+-- #define OPUS_NUM_BYTES_STEREO_HIGH_QUALITY                  73
+-- #define OPUS_NUM_BYTES_STEREO_LOW_QUALITY_DBLE_FRAMESIZE    47
+-- #define OPUS_NUM_BYTES_STEREO_NORMAL_QUALITY_DBLE_FRAMESIZE 71
+-- #define OPUS_NUM_BYTES_STEREO_HIGH_QUALITY_DBLE_FRAMESIZE   142
+-- #define OPUS_NUM_BYTES_STEREO_HIGHER_QUALITY_DBLE_FRAMESIZE 165
+
+local mono = {
+	LOW_QUALITY = 12,
+	NORMAL_QUALITY = 22,
+	HIGH_QUALITY = 36,
+	LOW_QUALITY_DBLE_FRAMESIZE = 25,
+	NORMAL_QUALITY_DBLE_FRAMESIZE = 45,
+	HIGH_QUALITY_DBLE_FRAMESIZE = 71,
+	HIGHER_QUALITY_DBLE_FRAMESIZE = 82,
+}
+local mono_valstr = makeValString(mono)
+
+local stereo = {
+	LOW_QUALITY = 24,
+	NORMAL_QUALITY = 35,
+	HIGH_QUALITY = 73,
+	LOW_QUALITY_DBLE_FRAMESIZE = 47,
+	NORMAL_QUALITY_DBLE_FRAMESIZE = 71,
+	HIGH_QUALITY_DBLE_FRAMESIZE = 142,
+	HIGHER_QUALITY_DBLE_FRAMESIZE = 165,
+}
+local stereo_valstr = makeValString(stereo)
+
+----------------------------------------
 -- a table of all of our Protocol's fields
 local fields =
 {
@@ -542,9 +581,6 @@ function jamulus.dissector(buffer, pinfo, tree)
 
 	pinfo.cols.protocol = jamulus.name
 
-	local chans = ""	-- in case of audio packet
-	if buffer(0,1):le_uint() == 0 then chans = " Mono" elseif buffer(0,1):le_uint() == 4 then chans = " Stereo" end
-
 	if buffer(0,2):le_uint() == 0 and length >= 7 then
 		datalen = buffer(5,2):le_uint()
 
@@ -563,14 +599,49 @@ function jamulus.dissector(buffer, pinfo, tree)
 
 			disect_msg(pinfo, opcode, buffer(7,datalen), subtree)
 			subtree:add_le(fields.crc, buffer(7+datalen, 2))
-		else
-			local subtree = tree:add(jamulus, buffer(), "Jamulus Audio Data" .. chans, "(" .. length .. " byte" .. s .. ")")
-			pinfo.cols.info = "Audio Data" .. chans
+
+			return
 		end
-	else
-		local subtree = tree:add(jamulus, buffer(), "Jamulus Audio Data" .. chans, "(" .. length .. " byte" .. s .. ")")
-		pinfo.cols.info = "Audio Data" .. chans
 	end
+
+	local monster = buffer(0,1):le_uint()
+	local quality
+
+	if monster == 0 then
+		-- Mono audio
+		quality = mono_valstr[length]
+		if quality then
+			local subtree = tree:add(jamulus, buffer(), "Jamulus Audio Mono " .. quality , "(" .. length .. " byte" .. s .. ")")
+			pinfo.cols.info = "Audio Mono " .. quality
+			return
+		end
+		quality = mono_valstr[length-1]
+		if quality then
+			seq = buffer(length-1,1):le_uint()
+			local subtree = tree:add(jamulus, buffer(), "Jamulus Sequenced Audio Mono " .. quality , "(#" .. seq .. ", " .. length .. " byte" .. s .. ")")
+			pinfo.cols.info = "Audio Mono " .. quality .. " #" .. seq
+			return
+		end
+	elseif monster == 4 then
+		-- Stereo audio
+		quality = stereo_valstr[length]
+		if quality then
+			local subtree = tree:add(jamulus, buffer(), "Jamulus Audio Stereo " .. quality , "(" .. length .. " byte" .. s .. ")")
+			pinfo.cols.info = "Audio Stereo " .. quality
+			return
+		end
+		quality = stereo_valstr[length-1]
+		if quality then
+			seq = buffer(length-1,1):le_uint()
+			local subtree = tree:add(jamulus, buffer(), "Jamulus Sequenced Audio Stereo " .. quality , "(#" .. seq .. ", " .. length .. " byte" .. s .. ")")
+			pinfo.cols.info = "Audio Stereo " .. quality .. " #" .. seq
+			return
+		end
+	end
+
+	-- Unknown audio type
+	local subtree = tree:add(jamulus, buffer(), "Jamulus Audio Unknown", "(" .. length .. " byte" .. s .. ")")
+	pinfo.cols.info = "Audio Unknown"
 end
 
 local function panValue(pan)
