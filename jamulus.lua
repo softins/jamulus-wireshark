@@ -728,7 +728,7 @@ function disect_msg(pinfo, opcode, buf, subtree)
 		n = buf(0,2):le_uint()
 		if n > 0 then
 			msgdata:add(fields.chat, buf(2,n))
-			pinfo.cols.info:append(" (\"" .. buf(2,n):string() .. "\")")
+			pinfo.cols.info:append(" (\"" .. buf(2,n):string():gsub("\n", "\\n") .. "\")")
 		end
 	elseif opcode == opcodes.PING_MS then
 		-- Obsolete
