@@ -722,8 +722,15 @@ function disect_msg(pinfo, opcode, buf, subtree)
 		msgdata:add_le(fields.ackid, buf)
 		pinfo.cols.info:append(" (" .. opcodes_valstr[ackopcode] .. ")")
 	elseif opcode == opcodes.JITT_BUF_SIZE then
-		msgdata:add_le(fields.jbsize, buf)
-		pinfo.cols.info:append(" (" .. buf:le_uint() .. ")")
+		local jitnum = buf:le_uint()
+		local jitstr = jitnum
+		if jitnum == 21 then
+			jitstr = "AUTO"
+			msgdata:add_le(fields.jbsize, buf):append_text(" (" .. jitstr .. ")")
+		else
+			msgdata:add_le(fields.jbsize, buf)
+		end
+		pinfo.cols.info:append(" (" .. jitstr .. ")")
 	elseif opcode == opcodes.REQ_JITT_BUF_SIZE then
 		-- no data
 	elseif opcode == opcodes.NET_BLSI_FACTOR then
