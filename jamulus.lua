@@ -466,6 +466,12 @@ local codecs = {
 }
 local codecs_valstr = makeValString(codecs)
 
+local flags = {
+	NO_SEQ = 0,	-- no sequence numbers
+	WITH_SEQ = 1,	-- with sequence numbers
+}
+local flags_valstr = makeValString(flags)
+
 local opsys = {
 	Windows	= 0,
 	MacOS	= 1,
@@ -555,7 +561,7 @@ local fields =
 	levels = ProtoField.bytes("jamulus.levels", "Levels", base.SPACE),
 	samrate = ProtoField.uint32("jamulus.samrate", "Sample Rate", base.DEC),
 	codec = ProtoField.uint16("jamulus.codec", "Codec", base.DEC, codecs_valstr),
-	cver = ProtoField.uint16("jamulus.cver", "Codec Version", base.DEC),
+	cver = ProtoField.uint16("jamulus.flags", "Flags", base.DEC, flags_valstr),
 	carg = ProtoField.uint32("jamulus.carg", "Codec Arg", base.DEC),
 	data = ProtoField.bytes("jamulus.data", "Data"),
 	name = ProtoField.string("jamulus.name", "Name", base.UNICODE),
