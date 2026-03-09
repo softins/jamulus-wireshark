@@ -125,6 +125,7 @@ opcodes = {
 	CLM_REGISTER_SERVER_RESP	= 1016,	-- status of server registration request
 	CLM_REGISTER_SERVER_EX		= 1017,	-- register server with extended information
 	CLM_RED_SERVER_LIST		= 1018,	-- reduced server list
+	CLM_TCP_SUPPORTED		= 1019,	-- TCP is supported
 
 	SPECIAL_SPLIT_MESSAGE		= 2001,	-- a container for split messages
 }
@@ -938,6 +939,8 @@ function disect_msg(pinfo, opcode, buf, subtree)
 		if c == 1 then s = "" end
 		pinfo.cols.info:append(" (" .. c .. " server" .. s .. ")")
 	elseif opcode == opcodes.CLM_REQ_SERVER_LIST then
+		-- no data
+	elseif opcode == opcodes.CLM_TCP_SUPPORTED then
 		-- no data
 	elseif opcode == opcodes.CLM_SEND_EMPTY_MESSAGE then
 		msgdata:add_le(fields.ipaddr, buf(0,4))
