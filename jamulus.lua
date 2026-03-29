@@ -540,6 +540,7 @@ local fields =
 {
 	tag = ProtoField.uint16("jamulus.tag", "Tag", base.DEC),
 	id = ProtoField.uint16("jamulus.id", "ID", base.DEC, opcodes_valstr),
+	tcpid = ProtoField.uint16("jamulus.tcpid", "TCPID", base.DEC, opcodes_valstr),
 	splitid = ProtoField.uint16("jamulus.splitid", "ID", base.DEC, opcodes_valstr),
 	ackid = ProtoField.uint16("jamulus.ackid", "AckID", base.DEC, opcodes_valstr),
 	cnt = ProtoField.uint8("jamulus.cnt", "Cnt", base.DEC),
@@ -941,7 +942,9 @@ function disect_msg(pinfo, opcode, buf, subtree)
 	elseif opcode == opcodes.CLM_REQ_SERVER_LIST then
 		-- no data
 	elseif opcode == opcodes.CLM_TCP_SUPPORTED then
-		-- no data
+		local tcpopcode = buf:le_uint()
+		msgdata:add_le(fields.tcpid, buf)
+		pinfo.cols.info:append(" (" .. opcodes_valstr[tcpopcode] .. ")")
 	elseif opcode == opcodes.CLM_SEND_EMPTY_MESSAGE then
 		msgdata:add_le(fields.ipaddr, buf(0,4))
 		msgdata:add_le(fields.port, buf(4,2))
