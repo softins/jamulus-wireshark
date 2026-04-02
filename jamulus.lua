@@ -126,6 +126,7 @@ opcodes = {
 	CLM_REGISTER_SERVER_EX		= 1017,	-- register server with extended information
 	CLM_RED_SERVER_LIST		= 1018,	-- reduced server list
 	CLM_TCP_SUPPORTED		= 1019,	-- TCP is supported
+	CLM_CLIENT_ID			= 1020,	-- client channel ID for TCP association
 
 	SPECIAL_SPLIT_MESSAGE		= 2001,	-- a container for split messages
 }
@@ -945,6 +946,9 @@ function disect_msg(pinfo, opcode, buf, subtree)
 		local tcpopcode = buf:le_uint()
 		msgdata:add_le(fields.tcpid, buf)
 		pinfo.cols.info:append(" (" .. opcodes_valstr[tcpopcode] .. ")")
+	elseif opcode == opcodes.CLM_CLIENT_ID then
+		msgdata:add_le(fields.chanid, buf(0,1))
+		pinfo.cols.info:append(" (" .. buf(0,1):le_uint() .. ")")
 	elseif opcode == opcodes.CLM_SEND_EMPTY_MESSAGE then
 		msgdata:add_le(fields.ipaddr, buf(0,4))
 		msgdata:add_le(fields.port, buf(4,2))
