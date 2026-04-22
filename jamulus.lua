@@ -628,31 +628,28 @@ function jamulus.dissector(buffer, pinfo, tree)
 	if monster == 0 then
 		-- Mono audio
 		-- First try double frame
-		if (length % 2) == 0 and buffer(0,1):le_uint() == buffer(length/2,1):le_uint() then
+		if (length % 2) == 0 and monster == buffer(length/2,1):le_uint() then
 			-- possibly two Opus frames
 			local halflen = length/2
+			quality = mono_valstr[halflen-1]
+			if quality then
+				local seq1 = buffer(halflen-1,1):le_uint()
+				local seq2 = buffer(length-1,1):le_uint()
+				-- check for consecutive sequence numbers
+				if seq2 == (seq1 + 1) & 255 then
+					local subtree = tree:add(jamulus, buffer(), "Jamulus Audio Mono " .. quality .. " 2 frames Seq", "(#" .. seq1 .. "-" .. seq2 .. ", " .. length .. " byte" .. s .. ")")
+					pinfo.cols.info = "Audio Mono " .. quality .. " 2 frames Seq #" .. seq1 .. "-" .. seq2
+					return
+				end
+			end
 			quality = mono_valstr[halflen]
 			if quality then
 				local subtree = tree:add(jamulus, buffer(), "Jamulus Audio Mono " .. quality .. " 2 frames", "(" .. length .. " byte" .. s .. ")")
 				pinfo.cols.info = "Audio Mono " .. quality .. " 2 frames"
 				return
 			end
-			quality = mono_valstr[halflen-1]
-			if quality then
-				local seq1 = buffer(halflen-1,1):le_uint()
-				local seq2 = buffer(length-1,1):le_uint()
-				local subtree = tree:add(jamulus, buffer(), "Jamulus Audio Mono " .. quality .. " 2 frames Seq", "(#" .. seq1 .. "-" .. seq2 .. ", " .. length .. " byte" .. s .. ")")
-				pinfo.cols.info = "Audio Mono " .. quality .. " 2 frames Seq #" .. seq1 .. "-" .. seq2
-				return
-			end
 		end
 		-- Now try single frame
-		quality = mono_valstr[length]
-		if quality then
-			local subtree = tree:add(jamulus, buffer(), "Jamulus Audio Mono " .. quality , "(" .. length .. " byte" .. s .. ")")
-			pinfo.cols.info = "Audio Mono " .. quality
-			return
-		end
 		quality = mono_valstr[length-1]
 		if quality then
 			local seq = buffer(length-1,1):le_uint()
@@ -660,39 +657,48 @@ function jamulus.dissector(buffer, pinfo, tree)
 			pinfo.cols.info = "Audio Mono " .. quality .. " Seq #" .. seq
 			return
 		end
+		quality = mono_valstr[length]
+		if quality then
+			local subtree = tree:add(jamulus, buffer(), "Jamulus Audio Mono " .. quality , "(" .. length .. " byte" .. s .. ")")
+			pinfo.cols.info = "Audio Mono " .. quality
+			return
+		end
 	elseif monster == 4 then
 		-- Stereo audio
 		-- First try double frame
-		if (length % 2) == 0 and buffer(0,1):le_uint() == buffer(length/2,1):le_uint() then
+		if (length % 2) == 0 and monster == buffer(length/2,1):le_uint() then
 			-- possibly two Opus frames
 			local halflen = length/2
+			quality = stereo_valstr[halflen-1]
+			if quality then
+				local seq1 = buffer(halflen-1,1):le_uint()
+				local seq2 = buffer(length-1,1):le_uint()
+				-- check for consecutive sequence numbers
+				if seq2 == (seq1 + 1) & 255 then
+					local subtree = tree:add(jamulus, buffer(), "Jamulus Audio Stereo " .. quality .. " 2 frames Seq", "(#" .. seq1 .. "-" .. seq2 .. ", " .. length .. " byte" .. s .. ")")
+					pinfo.cols.info = "Audio Stereo " .. quality .. " 2 frames Seq #" .. seq1 .. "-" .. seq2
+					return
+				end
+			end
 			quality = stereo_valstr[halflen]
 			if quality then
 				local subtree = tree:add(jamulus, buffer(), "Jamulus Audio Stereo " .. quality .. " 2 frames", "(" .. length .. " byte" .. s .. ")")
 				pinfo.cols.info = "Audio Stereo " .. quality .. " 2 frames"
 				return
 			end
-			quality = stereo_valstr[halflen-1]
-			if quality then
-				local seq1 = buffer(halflen-1,1):le_uint()
-				local seq2 = buffer(length-1,1):le_uint()
-				local subtree = tree:add(jamulus, buffer(), "Jamulus Audio Stereo " .. quality .. " 2 frames Seq", "(#" .. seq1 .. "-" .. seq2 .. ", " .. length .. " byte" .. s .. ")")
-				pinfo.cols.info = "Audio Stereo " .. quality .. " 2 frames Seq #" .. seq1 .. "-" .. seq2
-				return
-			end
 		end
 		-- Now try single frame
-		quality = stereo_valstr[length]
-		if quality then
-			local subtree = tree:add(jamulus, buffer(), "Jamulus Audio Stereo " .. quality , "(" .. length .. " byte" .. s .. ")")
-			pinfo.cols.info = "Audio Stereo " .. quality
-			return
-		end
 		quality = stereo_valstr[length-1]
 		if quality then
 			local seq = buffer(length-1,1):le_uint()
 			local subtree = tree:add(jamulus, buffer(), "Jamulus Audio Stereo " .. quality .. " Seq" , "(#" .. seq .. ", " .. length .. " byte" .. s .. ")")
 			pinfo.cols.info = "Audio Stereo " .. quality .. " Seq #" .. seq
+			return
+		end
+		quality = stereo_valstr[length]
+		if quality then
+			local subtree = tree:add(jamulus, buffer(), "Jamulus Audio Stereo " .. quality , "(" .. length .. " byte" .. s .. ")")
+			pinfo.cols.info = "Audio Stereo " .. quality
 			return
 		end
 	end
