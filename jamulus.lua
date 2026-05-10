@@ -106,6 +106,7 @@ opcodes = {
 	RECORDER_STATE			= 33,	-- state of the jam recorder on the server
 	REQ_SPLIT_MESS_SUPPORT		= 34,	-- request support for split messages
 	SPLIT_MESS_SUPPORTED		= 35,	-- split messages are supported
+	RAWAUDIO_SUPPORTED		= 36,	-- raw audio is supported
 
 	CLM_PING_MS			= 1001,	-- for measuring ping time
 	CLM_PING_MS_WITHNUMCLIENTS	= 1002,	-- for ping time and num. of clients info
@@ -465,6 +466,8 @@ local codecs = {
 	CELT = 1,	-- CELT
 	OPUS = 2,	-- OPUS
 	OPUS64 = 3,	-- OPUS64
+	RAW = 4,	-- RAW
+	RAW64 = 5,	-- RAW64
 }
 local codecs_valstr = makeValString(codecs)
 
@@ -516,23 +519,29 @@ local muting_valstr = makeValString(muting)
 -- #define OPUS_NUM_BYTES_STEREO_HIGHER_QUALITY_DBLE_FRAMESIZE 165
 
 local mono_valstr = {
-	[12] = "Low Quality",
-	[22] = "Normal Quality",
-	[36] = "High Quality",
-	[25] = "Low Quality Double Framesize",
-	[45] = "Normal Quality Double Framesize",
-	[71] = "High Quality Double Framesize",
-	[82] = "Higher Quality Double Framesize",
+	[12] = "OPUS Low Quality",
+	[22] = "OPUS Normal Quality",
+	[36] = "OPUS High Quality",
+	[25] = "OPUS Low Quality Double Framesize",
+	[45] = "OPUS Normal Quality Double Framesize",
+	[71] = "OPUS High Quality Double Framesize",
+	[82] = "OPUS Higher Quality Double Framesize",
 }
 
 local stereo_valstr = {
-	[24] = "Low Quality",
-	[35] = "Normal Quality",
-	[73] = "High Quality",
-	[47] = "Low Quality Double Framesize",
-	[71] = "Normal Quality Double Framesize",
-	[142] = "High Quality Double Framesize",
-	[165] = "Higher Quality Double Framesize",
+	[24] = "OPUS Low Quality",
+	[35] = "OPUS Normal Quality",
+	[73] = "OPUS High Quality",
+	[47] = "OPUS Low Quality Double Framesize",
+	[71] = "OPUS Normal Quality Double Framesize",
+	[142] = "OPUS High Quality Double Framesize",
+	[165] = "OPUS Higher Quality Double Framesize",
+}
+
+local raw_valstr = {
+	[128] = "RAW 128 bytes", -- 64 mono
+	[256] = "RAW 256 bytes", -- 64 stereo, 128 mono or 256 mono
+	[512] = "RAW 512 bytes", -- 128 stereo or 256 stereo
 }
 
 ----------------------------------------
@@ -622,6 +631,43 @@ function jamulus.dissector(buffer, pinfo, tree)
 		end
 	end
 
+	-- Try raw sizes
+	-- First try double frame
+	if (length % 2) == 0 then
+		local halflen = length/2
+		rawsize = raw_valstr[halflen-1]
+		if rawsize then
+			local seq1 = buffer(halflen-1,1):le_uint()
+			local seq2 = buffer(length-1,1):le_uint()
+			-- check for consecutive sequence numbers
+			if seq2 == (seq1 + 1) & 255 then
+				local subtree = tree:add(jamulus, buffer(), "Jamulus Audio " .. rawsize .. " 2 frames Seq #" .. seq1 .. "-" .. seq2, "(" .. length .. " byte" .. s .. ")")
+				pinfo.cols.info = "Audio " .. rawsize .. " 2 frames Seq #" .. seq1 .. "-" .. seq2
+				return
+			end
+		end
+		rawsize = raw_valstr[halflen]
+		if rawsize and not raw_valstr[length] then
+			local subtree = tree:add(jamulus, buffer(), "Jamulus Audio " .. rawsize .. " 2 frames", "(" .. length .. " byte" .. s .. ")")
+			pinfo.cols.info = "Audio " .. rawsize .. " 2 frames"
+			return
+		end
+	end
+	-- Now try single frame
+	rawsize = raw_valstr[length-1]
+	if rawsize then
+		local seq = buffer(length-1,1):le_uint()
+		local subtree = tree:add(jamulus, buffer(), "Jamulus Audio " .. rawsize .. " Seq #" .. seq, "(" .. length .. " byte" .. s .. ")")
+		pinfo.cols.info = "Audio " .. rawsize .. " Seq #" .. seq
+		return
+	end
+	rawsize = raw_valstr[length]
+	if rawsize then
+		local subtree = tree:add(jamulus, buffer(), "Jamulus Audio " .. rawsize, "(" .. length .. " byte" .. s .. ")")
+		pinfo.cols.info = "Audio " .. rawsize
+		return
+	end
+			
 	local monster = buffer(0,1):le_uint()
 	local quality
 
@@ -637,7 +683,7 @@ function jamulus.dissector(buffer, pinfo, tree)
 				local seq2 = buffer(length-1,1):le_uint()
 				-- check for consecutive sequence numbers
 				if seq2 == (seq1 + 1) & 255 then
-					local subtree = tree:add(jamulus, buffer(), "Jamulus Audio Mono " .. quality .. " 2 frames Seq", "(#" .. seq1 .. "-" .. seq2 .. ", " .. length .. " byte" .. s .. ")")
+					local subtree = tree:add(jamulus, buffer(), "Jamulus Audio Mono " .. quality .. " 2 frames Seq #" .. seq1 .. "-" .. seq2, "(" .. length .. " byte" .. s .. ")")
 					pinfo.cols.info = "Audio Mono " .. quality .. " 2 frames Seq #" .. seq1 .. "-" .. seq2
 					return
 				end
@@ -653,7 +699,7 @@ function jamulus.dissector(buffer, pinfo, tree)
 		quality = mono_valstr[length-1]
 		if quality then
 			local seq = buffer(length-1,1):le_uint()
-			local subtree = tree:add(jamulus, buffer(), "Jamulus Audio Mono " .. quality .. " Seq", "(#" .. seq .. ", " .. length .. " byte" .. s .. ")")
+			local subtree = tree:add(jamulus, buffer(), "Jamulus Audio Mono " .. quality .. " Seq #" .. seq, "(" .. length .. " byte" .. s .. ")")
 			pinfo.cols.info = "Audio Mono " .. quality .. " Seq #" .. seq
 			return
 		end
@@ -675,7 +721,7 @@ function jamulus.dissector(buffer, pinfo, tree)
 				local seq2 = buffer(length-1,1):le_uint()
 				-- check for consecutive sequence numbers
 				if seq2 == (seq1 + 1) & 255 then
-					local subtree = tree:add(jamulus, buffer(), "Jamulus Audio Stereo " .. quality .. " 2 frames Seq", "(#" .. seq1 .. "-" .. seq2 .. ", " .. length .. " byte" .. s .. ")")
+					local subtree = tree:add(jamulus, buffer(), "Jamulus Audio Stereo " .. quality .. " 2 frames Seq #" .. seq1 .. "-" .. seq2, "(" .. length .. " byte" .. s .. ")")
 					pinfo.cols.info = "Audio Stereo " .. quality .. " 2 frames Seq #" .. seq1 .. "-" .. seq2
 					return
 				end
@@ -691,7 +737,7 @@ function jamulus.dissector(buffer, pinfo, tree)
 		quality = stereo_valstr[length-1]
 		if quality then
 			local seq = buffer(length-1,1):le_uint()
-			local subtree = tree:add(jamulus, buffer(), "Jamulus Audio Stereo " .. quality .. " Seq" , "(#" .. seq .. ", " .. length .. " byte" .. s .. ")")
+			local subtree = tree:add(jamulus, buffer(), "Jamulus Audio Stereo " .. quality .. " Seq #" .. seq, "(" .. length .. " byte" .. s .. ")")
 			pinfo.cols.info = "Audio Stereo " .. quality .. " Seq #" .. seq
 			return
 		end
@@ -867,6 +913,8 @@ function disect_msg(pinfo, opcode, buf, subtree)
 	elseif opcode == opcodes.REQ_SPLIT_MESS_SUPPORT then
 		-- no data
 	elseif opcode == opcodes.SPLIT_MESS_SUPPORTED then
+		-- no data
+	elseif opcode == opcodes.RAWAUDIO_SUPPORTED then
 		-- no data
 	elseif opcode == opcodes.CLM_PING_MS then
 		msgdata:add_le(fields.txtime, buf(0,4))
