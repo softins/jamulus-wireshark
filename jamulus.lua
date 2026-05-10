@@ -640,7 +640,7 @@ function jamulus.dissector(buffer, pinfo, tree)
 			local seq1 = buffer(halflen-1,1):le_uint()
 			local seq2 = buffer(length-1,1):le_uint()
 			-- check for consecutive sequence numbers
-			if seq2 == (seq1 + 1) & 255 then
+			if seq2 == (seq1 + 1) % 256 then
 				local subtree = tree:add(jamulus, buffer(), "Jamulus Audio " .. rawsize .. " 2 frames Seq #" .. seq1 .. "-" .. seq2, "(" .. length .. " byte" .. s .. ")")
 				pinfo.cols.info = "Audio " .. rawsize .. " 2 frames Seq #" .. seq1 .. "-" .. seq2
 				return
@@ -682,7 +682,7 @@ function jamulus.dissector(buffer, pinfo, tree)
 				local seq1 = buffer(halflen-1,1):le_uint()
 				local seq2 = buffer(length-1,1):le_uint()
 				-- check for consecutive sequence numbers
-				if seq2 == (seq1 + 1) & 255 then
+				if seq2 == (seq1 + 1) % 256 then
 					local subtree = tree:add(jamulus, buffer(), "Jamulus Audio Mono " .. quality .. " 2 frames Seq #" .. seq1 .. "-" .. seq2, "(" .. length .. " byte" .. s .. ")")
 					pinfo.cols.info = "Audio Mono " .. quality .. " 2 frames Seq #" .. seq1 .. "-" .. seq2
 					return
@@ -720,7 +720,7 @@ function jamulus.dissector(buffer, pinfo, tree)
 				local seq1 = buffer(halflen-1,1):le_uint()
 				local seq2 = buffer(length-1,1):le_uint()
 				-- check for consecutive sequence numbers
-				if seq2 == (seq1 + 1) & 255 then
+				if seq2 == (seq1 + 1) % 256 then
 					local subtree = tree:add(jamulus, buffer(), "Jamulus Audio Stereo " .. quality .. " 2 frames Seq #" .. seq1 .. "-" .. seq2, "(" .. length .. " byte" .. s .. ")")
 					pinfo.cols.info = "Audio Stereo " .. quality .. " 2 frames Seq #" .. seq1 .. "-" .. seq2
 					return
