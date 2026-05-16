@@ -1168,6 +1168,12 @@ jamulus.prefs.enabled     = Pref.bool("Dissector enabled", default_settings.enab
 jamulus.prefs.debug       = Pref.enum("Debug", default_settings.debug_level,
                                         "The debug printing level", debug_pref_enum)
 
+jamulus.prefs.port1 = Pref.uint("First UDP port", default_settings.port1,
+                                    "First UDP port number for Jamulus")
+
+jamulus.prefs.port2 = Pref.uint("Last UDP port", default_settings.port2,
+                                    "Last UDP port number for Jamulus")
+
 ----------------------------------------
 -- the function for handling preferences being changed
 function jamulus.prefs_changed()
@@ -1187,6 +1193,21 @@ function jamulus.prefs_changed()
         reload()
     end
 
+    -- Handle port range changes
+    if default_settings.port1 ~= jamulus.prefs.port1 or default_settings.port2 ~= jamulus.prefs.port2 then
+        -- Remove old port registrations
+        disableDissector()
+
+        -- Update to new port range
+        default_settings.port1 = jamulus.prefs.port1
+        default_settings.port2 = jamulus.prefs.port2
+
+        -- Register with new ports
+        enableDissector()
+
+        -- Reload capture file to re-dissect with new ports
+        reload()
+    end
 end
 
 dprint2("jamulus Prefs registered")
