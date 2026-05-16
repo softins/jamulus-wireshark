@@ -581,6 +581,7 @@ local fields =
 	chat = ProtoField.string("jamulus.chat", "Chat Text", base.UNICODE),
 	crc = ProtoField.uint16("jamulus.crc", "CRC", base.HEX),
 	port = ProtoField.uint16("jamulus.port", "Port", base.DEC),
+	ipunused = ProtoField.ipv4("jamulus.ipunused", "IP Unused"),
 	ipaddr = ProtoField.ipv4("jamulus.ipaddr", "IP Address"),
 	ipaddrs = ProtoField.string("jamulus.ipaddrs", "IP Address", base.UNICODE),
 	licreq = ProtoField.uint8("jamulus.licreq", "Licence Required", base.DEC),
@@ -847,7 +848,7 @@ function disect_msg(pinfo, opcode, buf, subtree)
 			client:add_le(fields.country, buf(i,2)); i=i+2
 			client:add_le(fields.instrument, buf(i,4)); i=i+4
 			client:add_le(fields.skill, buf(i,1)); i=i+1
-			client:add_le(fields.ipaddr, buf(i,4)); i=i+4
+			client:add_le(fields.ipunused, buf(i,4)); i=i+4
 			n = buf(i,2):le_uint(); i=i+2
 			if n > 0 then client:add(fields.name, buf(i, n)); i=i+n end
 			n = buf(i,2):le_uint(); i=i+2
@@ -1036,7 +1037,7 @@ function disect_msg(pinfo, opcode, buf, subtree)
 			client:add_le(fields.country, buf(i,2)); i=i+2
 			client:add_le(fields.instrument, buf(i,4)); i=i+4
 			client:add_le(fields.skill, buf(i,1)); i=i+1
-			client:add_le(fields.ipaddr, buf(i,4)); i=i+4
+			client:add_le(fields.ipunused, buf(i,4)); i=i+4
 			n = buf(i,2):le_uint()
 			client:add_le(fields.len, buf(i,2)); i=i+2
 			if n > 0 then client:add(fields.name, buf(i, n)); i=i+n end
