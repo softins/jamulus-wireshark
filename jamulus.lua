@@ -126,8 +126,12 @@ opcodes = {
 	CLM_REGISTER_SERVER_RESP	= 1016,	-- status of server registration request
 	CLM_REGISTER_SERVER_EX		= 1017,	-- register server with extended information
 	CLM_RED_SERVER_LIST		= 1018,	-- reduced server list
-	CLM_TCP_SUPPORTED		= 1019,	-- TCP is supported
-	CLM_CLIENT_ID			= 1020,	-- client channel ID for TCP association
+	CLM_SERVER_FEATURES		= 1019, -- server features message
+	CLM_REQ_SERVER_FEATURES		= 1020, -- request server features
+	CLM_WELCOME_MESSAGE		= 1021, -- server welcome message
+	CLM_REQ_WELCOME_MESSAGE		= 1022, -- request server welcome message
+	CLM_TCP_SUPPORTED		= 1023,	-- TCP is supported
+	CLM_CLIENT_ID			= 1024,	-- client channel ID for TCP association
 
 	SPECIAL_SPLIT_MESSAGE		= 2001,	-- a container for split messages
 }
@@ -579,6 +583,7 @@ local fields =
 	name = ProtoField.string("jamulus.name", "Name", base.UNICODE),
 	city = ProtoField.string("jamulus.city", "City", base.UNICODE),
 	chat = ProtoField.string("jamulus.chat", "Chat Text", base.UNICODE),
+	welcome = ProtoField.string("jamulus.welcome", "Welcome Message", base.UNICODE),
 	crc = ProtoField.uint16("jamulus.crc", "CRC", base.HEX),
 	port = ProtoField.uint16("jamulus.port", "Port", base.DEC),
 	ipunused = ProtoField.ipv4("jamulus.ipunused", "IP Unused"),
@@ -593,6 +598,7 @@ local fields =
 	os = ProtoField.uint8("jamulus.os", "Operating System", base.DEC, opsys_valstr),
 	osver = ProtoField.string("jamulus.osver", "OS Version", base.UNICODE),
 	status = ProtoField.uint8("jamulus.status", "Status", base.DEC, status_valstr),
+	features = ProtoField.uint32("jamulus.features", "Features", base.HEX),
 }
 
 -- register the ProtoFields
@@ -996,6 +1002,19 @@ function disect_msg(pinfo, opcode, buf, subtree)
 		if c == 1 then s = "" end
 		pinfo.cols.info:append(" (" .. c .. " server" .. s .. ")")
 	elseif opcode == opcodes.CLM_REQ_SERVER_LIST then
+		-- no data
+	elseif opcode == opcodes.CLM_SERVER_FEATURES then
+		msgdata:add_le(fields.features, buf(0,4))
+		pinfo.cols.info:append(" (" .. buf(0,4):le_uint() .. ")")
+	elseif opcode == opcodes.CLM_REQ_SERVER_FEATURES then
+		-- no data
+	elseif opcode == opcodes.CLM_WELCOME_MESSAGE then
+		n = buf(0,2):le_uint()
+		if n > 0 then
+			msgdata:add(fields.welcome, buf(2,n))
+			pinfo.cols.info:append(" (\"" .. buf(2,n):string():gsub("\n", "\\n") .. "\")")
+		end
+	elseif opcode == opcodes.CLM_REQ_WELCOME_MESSAGE then
 		-- no data
 	elseif opcode == opcodes.CLM_TCP_SUPPORTED then
 		local tcpopcode = buf:le_uint()
