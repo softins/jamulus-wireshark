@@ -599,6 +599,7 @@ local fields =
 	osver = ProtoField.string("jamulus.osver", "OS Version", base.UNICODE),
 	status = ProtoField.uint8("jamulus.status", "Status", base.DEC, status_valstr),
 	features = ProtoField.uint32("jamulus.features", "Features", base.HEX),
+	token = ProtoField.uint32("jamulus.token", "Channel Token", base.DEC),
 }
 
 -- register the ProtoFields
@@ -1017,12 +1018,14 @@ function disect_msg(pinfo, opcode, buf, subtree)
 	elseif opcode == opcodes.CLM_REQ_WELCOME_MESSAGE then
 		-- no data
 	elseif opcode == opcodes.CLM_TCP_SUPPORTED then
-		local tcpopcode = buf:le_uint()
-		msgdata:add_le(fields.tcpid, buf)
-		pinfo.cols.info:append(" (" .. opcodes_valstr[tcpopcode] .. ")")
+		local tcpopcode = buf(0,2):le_uint()
+		msgdata:add_le(fields.tcpid, buf(0,2))
+		msgdata:add_le(fields.token, buf(2,4))
+		pinfo.cols.info:append(" (" .. opcodes_valstr[tcpopcode] .. ", " .. buf(2,4):le_uint() .. ")")
 	elseif opcode == opcodes.CLM_CLIENT_ID then
 		msgdata:add_le(fields.chanid, buf(0,1))
-		pinfo.cols.info:append(" (" .. buf(0,1):le_uint() .. ")")
+		msgdata:add_le(fields.token, buf(1,4))
+		pinfo.cols.info:append(" (" .. buf(0,1):le_uint() .. ", " .. buf(1,4):le_uint() .. ")")
 	elseif opcode == opcodes.CLM_SEND_EMPTY_MESSAGE then
 		msgdata:add_le(fields.ipaddr, buf(0,4))
 		msgdata:add_le(fields.port, buf(4,2))
