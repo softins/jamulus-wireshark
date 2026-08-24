@@ -130,7 +130,7 @@ opcodes = {
 	CLM_REQ_SERVER_FEATURES		= 1020, -- request server features
 	CLM_WELCOME_MESSAGE		= 1021, -- server welcome message
 	CLM_REQ_WELCOME_MESSAGE		= 1022, -- request server welcome message
-	CLM_TCP_SUPPORTED		= 1023,	-- TCP is supported
+	CLM_TCP_OFFERED			= 1023,	-- TCP is offered to the client
 	CLM_CLIENT_ID			= 1024,	-- client channel ID for TCP association
 
 	SPECIAL_SPLIT_MESSAGE		= 2001,	-- a container for split messages
@@ -1017,7 +1017,7 @@ function disect_msg(pinfo, opcode, buf, subtree)
 		end
 	elseif opcode == opcodes.CLM_REQ_WELCOME_MESSAGE then
 		-- no data
-	elseif opcode == opcodes.CLM_TCP_SUPPORTED then
+	elseif opcode == opcodes.CLM_TCP_OFFERED then
 		local tcpopcode = buf(0,2):le_uint()
 		msgdata:add_le(fields.tcpid, buf(0,2))
 		msgdata:add_le(fields.token, buf(2,4))
